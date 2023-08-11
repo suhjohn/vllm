@@ -31,16 +31,15 @@ async def generate(request: Request) -> Response:
     sampling_params = SamplingParams(**request_dict)
     request_id = random_uuid()
     results_generator = engine.generate(prompt, sampling_params, request_id)
-
     # Streaming case
     async def stream_results() -> AsyncGenerator[bytes, None]:
-        async for request_output in results_generator:
-            prompt = request_output.prompt
-            text_outputs = [
-                prompt + output.text for output in request_output.outputs
-            ]
-            ret = {"text": text_outputs}
-            yield (json.dumps(ret) + "\0").encode("utf-8")
+        previous_texts = [""] * sampling_params.n
+        async for res in results_generator:
+            for output in res.outputs:
+                i = output.index
+                delta_text = output.text[len(previous_texts[i]):]
+                previous_texts[i] = output.text
+                yield delta_text.encode("utf-8")
 
     async def abort_request() -> None:
         await engine.abort(request_id)

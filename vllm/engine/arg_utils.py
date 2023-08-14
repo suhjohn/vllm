@@ -1,5 +1,6 @@
 import argparse
 import dataclasses
+import os
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -10,24 +11,24 @@ from vllm.config import (CacheConfig, ModelConfig, ParallelConfig,
 @dataclass
 class EngineArgs:
     """Arguments for vLLM engine."""
-    model: str
-    tokenizer: Optional[str] = None
-    tokenizer_mode: str = 'auto'
-    trust_remote_code: bool = False
-    download_dir: Optional[str] = None
-    use_np_weights: bool = False
-    use_dummy_weights: bool = False
-    dtype: str = 'auto'
-    seed: int = 0
-    worker_use_ray: bool = False
-    pipeline_parallel_size: int = 1
-    tensor_parallel_size: int = 1
-    block_size: int = 16
-    swap_space: int = 4  # GiB
-    gpu_memory_utilization: float = 0.90
-    max_num_batched_tokens: int = 2560
-    max_num_seqs: int = 256
-    disable_log_stats: bool = False
+    model: str = os.environ.get("MODEL", 'facebook/opt-125m')  # Updated default value
+    tokenizer: Optional[str] = os.environ.get("TOKENIZER", None)
+    tokenizer_mode: str = os.environ.get("TOKENIZER_MODE", 'auto')
+    trust_remote_code: bool = os.environ.get("TRUST_REMOTE", 'False').lower() == 'true'
+    download_dir: Optional[str] = os.environ.get("DOWNLOAD_DIR", None)
+    use_np_weights: bool = os.environ.get("USE_NP_WEIGHTS", 'False').lower() == 'true'
+    use_dummy_weights: bool = os.environ.get("USE_DUMMY_WEIGHTS", 'False').lower() == 'true'
+    dtype: str = os.environ.get("DTYPE", 'auto')
+    seed: int = int(os.environ.get("SEED", '0'))
+    worker_use_ray: bool = os.environ.get("WORKER_USE_RAY", 'False').lower() == 'true'
+    pipeline_parallel_size: int = int(os.environ.get("PIPELINE_SIZE", '1'))
+    tensor_parallel_size: int = int(os.environ.get("TENSOR_SIZE", '1'))
+    block_size: int = int(os.environ.get("BLOCK_SIZE", '16'))
+    swap_space: int = int(os.environ.get("SWAP_SPACE", '4'))  # GiB
+    gpu_memory_utilization: float = float(os.environ.get("GPU_MEMORY_UTILIZATION", '0.90'))
+    max_num_batched_tokens: int = int(os.environ.get("MAX_BATCHED_TOKENS", '2560'))
+    max_num_seqs: int = int(os.environ.get("MAX_NUM_SEQS", '256'))
+    disable_log_stats: bool = os.environ.get("DISABLE_LOG_STATS", 'False').lower() == 'true'
 
     def __post_init__(self):
         if self.tokenizer is None:
@@ -164,8 +165,8 @@ class EngineArgs:
 @dataclass
 class AsyncEngineArgs(EngineArgs):
     """Arguments for asynchronous vLLM engine."""
-    engine_use_ray: bool = False
-    disable_log_requests: bool = False
+    engine_use_ray: bool = os.environ.get("VLLM_ENGINE_USE_RAY", 'False').lower() == 'true'
+    disable_log_requests: bool = os.environ.get("VLLM_DISABLE_LOG_REQUESTS", 'False').lower() == 'true'
 
     @staticmethod
     def add_cli_args(
